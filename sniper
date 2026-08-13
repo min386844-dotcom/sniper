@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sniper X · Live Confidence</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+    }
+    .app {
+      width: 100%;
+      max-width: 420px;
+      background: #0d0d0d;
+      border-radius: 32px;
+      padding: 16px 12px 20px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.9);
+      border: 1px solid #222;
+    }
+
+    .login-panel {
+      background: #111;
+      border-radius: 24px;
+      padding: 28px 16px;
+      text-align: center;
+      border: 1px solid #2a2a2a;
+    }
+    .login-panel h2 {
+      color: #d4af37;
+      font-weight: 400;
+      letter-spacing: 1px;
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+    .login-panel p {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .login-panel input {
+      width: 85%;
+      padding: 14px 12px;
+      border-radius: 60px;
+      border: 1px solid #333;
+      background: #000;
+      color: #fff;
+      text-align: center;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 16px;
+    }
+    .login-panel input:focus { border-color: #d4af37; }
+    .btn {
+      background: #d4af37;
+      border: none;
+      color: #000;
+      font-weight: 700;
+      padding: 14px 20px;
+      border-radius: 60px;
+      width: 85%;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn:active { opacity: 0.7; transform: scale(0.97); }
+    .hidden { display: none !important; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111;
+      padding: 8px 16px;
+      border-radius: 60px;
+      border: 1px solid #252525;
+      margin-bottom: 12px;
+    }
+    .header .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #d4af37;
+      letter-spacing: 0.5px;
+    }
+    .header .title span { color: #fff; font-weight: 300; }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a1a1a;
+      padding: 4px 12px 4px 8px;
+      border-radius: 40px;
+      border: 1px solid #2a2a2a;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4cdf8b;
+      letter-spacing: 0.5px;
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4cdf8b;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 0.2; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.2; transform: scale(0.9); } }
+    .timer {
+      font-family: 'Fira Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      color: #ff6b6b;
+      background: #1a1a1a;
+      padding: 0 14px;
+      border-radius: 40px;
+      line-height: 1.4;
+    }
+
+    .predict-card {
+      background: linear-gradient(145deg, #111, #161616);
+      border-radius: 32px;
+      padding: 16px 12px 14px;
+      text-align: center;
+      border: 1px solid #2a2a2a;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .predict-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 40%, rgba(212,175,55,0.05), transparent 70%);
+      pointer-events: none;
+    }
+    .predict-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #888;
+      position: relative;
+    }
+    #predictResult {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.2;
+      margin: 0;
+      transition: 0.15s;
+      position: relative;
+    }
+    .big { color: #ff7b7b; }
+    .small { color: #6bb5ff; }
+
+    .confidence-wrap {
+      margin: 8px 0 4px;
+      position: relative;
+    }
+    .confidence-bar {
+      height: 6px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #222;
+    }
+    .confidence-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6bb5ff, #d4af37, #ff7b7b);
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+    .confidence-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #666;
+      margin-top: 3px;
+      letter-spacing: 0.3px;
+    }
+    .confidence-label span:last-child { color: #aaa; font-weight: 600; }
+
+    .live-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      padding: 4px 12px;
+      background: #0f0f0f;
+      border-radius: 60px;
+      border: 1px solid #222;
+      font-size: 13px;
+      position: relative;
+    }
+    .live-row .streak-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .live-row .streak-box .label { color: #777; font-size: 10px; text-transform: uppercase; }
+    .live-row .streak-box .value { font-weight: 700; color: #fff; }
+    .live-row .multiplier {
+      font-weight: 700;
+      color: #d4af37;
+      background: #1a1a1a;
+      padding: 2px 14px;
+      border-radius: 40px;
+      font-size: 18px;
+    }
+
+    .table-wrap {
+      background: #0d0d0d;
+      border-radius: 20px;
+      border: 1px solid #1f1f1f;
+      overflow: hidden;
+      max-height: 400px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: #141414;
+      color: #d4af37;
+      font-weight: 500;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      padding: 8px 3px;
+      border-bottom: 1px solid #222;
+    }
+    td {
+      padding: 6px 2px;
+      text-align: center;
+      border-bottom: 1px solid #181818;
+      font-weight: 400;
+    }
+    .hit { color: #4cdf8b; font-weight: 600; }
+    .miss { color: #ff5e6b; font-weight: 600; }
+    .number-big { color: #ff7b7b; }
+    .number-small { color: #6bb5ff; }
+    .streak-badge {
+      background: #1e1e1e;
+      padding: 0 8px;
+      border-radius: 30px;
+      font-size: 10px;
+      color: #aaa;
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #444;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <div id="loginBox" class="login-panel">
+    <h2>⚡ SNIPER X · LIVE</h2>
+    <p>confidence · smart trend · multiplier</p>
+    <input type="password" id="keyInput" placeholder="ENTER KEY">
+    <button class="btn" onclick="checkKey()">UNLOCK</button>
+  </div>
+
+  <div id="mainApp" class="hidden">
+    <div class="header">
+      <span class="title">🎯 <span>SNIPER</span> X</span>
+      <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+      <span class="timer" id="timer">00:00</span>
+    </div>
+
+    <div class="predict-card">
+      <div class="predict-label">⚡ next prediction</div>
+      <div id="predictResult">—</div>
+      
+      <div class="confidence-wrap">
+        <div class="confidence-bar">
+          <div class="confidence-fill" id="confidenceFill" style="width: 0%;"></div>
+        </div>
+        <div class="confidence-label">
+          <span>confidence</span>
+          <span id="confidenceText">0%</span>
+        </div>
+      </div>
+
+      <div class="live-row">
+        <div class="streak-box">
+          <span class="label">streak</span>
+          <span class="value" id="streakDisplay">0</span>
+        </div>
+        <div class="multiplier" id="multiplierDisplay">1x</div>
+        <div class="streak-box">
+          <span class="label">score</span>
+          <span class="value" id="scoreDisplay">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ROUND</th><th>NUM</th><th>PRED</th><th>RESULT</th><th>MULT</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+    <div class="footer-note"><span class="live-dot"></span> live · win=1x · loss=+1 multiplier</div>
+  </div>
+</div>
+
+<script>
+  const CORRECT_KEY = "kmklmmsp";
+
+  const loginBox = document.getElementById('loginBox');
+  const mainApp = document.getElementById('mainApp');
+  const keyInput = document.getElementById('keyInput');
+  const timerEl = document.getElementById('timer');
+  const predictResult = document.getElementById('predictResult');
+  const historyBody = document.getElementById('historyBody');
+  const streakDisplay = document.getElementById('streakDisplay');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const multiplierDisplay = document.getElementById('multiplierDisplay');
+  const confidenceFill = document.getElementById('confidenceFill');
+  const confidenceText = document.getElementById('confidenceText');
+
+  let historyData = [];
+  let currentStreak = 0;
+  let currentScore = 0;
+  let currentMultiplier = 1;
+
+  function checkKey() {
+    if (keyInput.value === CORRECT_KEY) {
+      loginBox.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+      fetchData();
+      setInterval(runTimer, 1000);
+    } else {
+      alert('Invalid key');
+    }
+  }
+
+  async function fetchData() {
+    try {
+      const res = await fetch(`https://draw.ar-lottery01.com/TrxWinGo/TrxWinGo_1M/GetHistoryIssuePage.json?ts=${Date.now()}`);
+      const json = await res.json();
+      if (json?.data?.list) {
+        historyData = json.data.list.slice(0, 30);
+        processAll(historyData);
+      }
+    } catch (e) {
+      console.warn('fetch error', e);
+    }
+  }
+
+  function getPredictionWithConfidence(list, index) {
+    if (index + 2 >= list.length) return { pred: '—', confidence: 0 };
+
+    const n1 = parseInt(list[index+1].number);
+    const n2 = parseInt(list[index+2].number);
+    const raw = (n1 + n2) % 10;
+    let pred = (raw <= 4) ? 'SMALL' : 'BIG';
+    let confidence = 55;
+
+    let bigCount = 0, smallCount = 0;
+    const lookback = Math.min(5, list.length - index);
+    for (let i = index; i < index + lookback; i++) {
+      const num = parseInt(list[i].number);
+      if (num >= 5) bigCount++;
+      else smallCount++;
+    }
+
+    let trendStrength = 0;
+    if (bigCount >= 4) { pred = 'BIG'; trendStrength = 85; }
+    else if (smallCount >= 4) { pred = 'SMALL'; trendStrength = 85; }
+    else if (bigCount >= 3) { pred = 'BIG'; trendStrength = 70; }
+    else if (smallCount >= 3) { pred = 'SMALL'; trendStrength = 70; }
+    else if (bigCount >= 2) { trendStrength = 60; }
+    else if (smallCount >= 2) { trendStrength = 60; }
+
+    if (index + 1 < list.length) {
+      const last1 = parseInt(list[index].number);
+      const last2 = parseInt(list[index+1].number);
+      const last1Res = (last1 >= 5) ? 'BIG' : 'SMALL';
+      const last2Res = (last2 >= 5) ? 'BIG' : 'SMALL';
+      if (last1Res === last2Res && last1Res === pred) {
+        trendStrength = Math.min(92, trendStrength + 12);
+      }
+    }
+
+    confidence = Math.max(55, Math.min(95, trendStrength));
+
+    return { pred, confidence };
+  }
+
+  function processAll(list) {
+    if (!list || list.length < 4) return;
+
+    const next = getPredictionWithConfidence(list, 0);
+    predictResult.textContent = next.pred;
+    predictResult.className = next.pred.toLowerCase();
+
+    const conf = Math.round(next.confidence);
+    confidenceFill.style.width = conf + '%';
+    confidenceText.textContent = conf + '%';
+
+    let html = '';
+    const displayLimit = Math.min(20, list.length - 2);
+
+    let tempStreak = 0;
+    let tempScore = 0;
+    let tempMultiplier = 1;
+    let rows = [];
+
+    for (let i = 0; i < displayLimit; i++) {
+      const item = list[i];
+      const actualNum = parseInt(item.number);
+      const actualRes = (actualNum >= 5) ? 'BIG' : 'SMALL';
+
+      const result = getPredictionWithConfidence(list, i);
+      const pred = result.pred;
+
+      let isHit = false;
+      let resultText = '—';
+      if (pred !== '—') {
+        isHit = (pred === actualRes);
+        resultText = isHit ? 'HIT' : 'MISS';
+      }
+
+      // MULTIPLIER RULE: WIN = 1x (reset), LOSS = +1 (increase)
+      if (pred !== '—') {
+        if (isHit) {
+          tempStreak += 1;
+          tempScore += 1;
+          tempMultiplier = 1;   // WIN → reset to 1x
+        } else {
+          tempStreak = 0;
+          tempScore -= 1;
+          tempMultiplier += 1;  // LOSS → +1 (2x, 3x, 4x, ...)
+        }
+      }
+
+      const roundLabel = item.issueNumber ? item.issueNumber.slice(-3) : '---';
+      const numClass = actualRes === 'BIG' ? 'number-big' : 'number-small';
+      const resultClass = (pred !== '—') ? (isHit ? 'hit' : 'miss') : '';
+
+      rows.push({
+        round: roundLabel,
+        num: actualNum,
+        numClass: numClass,
+        pred: pred,
+        resultText: resultText,
+        resultClass: resultClass,
+        mult: (pred !== '—') ? tempMultiplier + 'x' : '—',
+        streak: tempStreak,
+        score: tempScore
+      });
+    }
+
+    rows.reverse();
+
+    if (rows.length > 0) {
+      const latest = rows[0];
+      currentStreak = latest.streak;
+      currentScore = latest.score;
+      const multVal = parseInt(latest.mult) || 1;
+      currentMultiplier = multVal;
+    }
+
+    for (const r of rows) {
+      html += `<tr>
+        <td style="color:#777;">${r.round}</td>
+        <td class="${r.numClass}">${r.num}</td>
+        <td>${r.pred}</td>
+        <td class="${r.resultClass}">${r.resultText}</td>
+        <td><span class="streak-badge">${r.mult}</span></td>
+      </tr>`;
+    }
+
+    historyBody.innerHTML = html;
+
+    streakDisplay.textContent = currentStreak;
+    scoreDisplay.textContent = currentScore;
+    multiplierDisplay.textContent = currentMultiplier + 'x';
+  }
+
+  function runTimer() {
+    const sec = new Date().getUTCSeconds();
+    const rem = 60 - sec;
+    timerEl.textContent = `00:${rem.toString().padStart(2,'0')}`;
+    if (rem === 59 || rem === 1) {
+      fetchData();
+    }
+  }
+
+  keyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkKey();
+  });
+
+  console.log('Sniper X · win=1x · loss=+1 multiplier');
+</script>
+</body>
+</html>
